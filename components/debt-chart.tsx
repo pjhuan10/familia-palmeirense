@@ -58,7 +58,7 @@ export default function DebtChart({ data }: Props) {
               fontSize={12}
             />
             <Tooltip
-              formatter={(value: number) => formatCurrency(Number(value))}
+              formatter={(value) => formatCurrency(Number(value ?? 0))}
               cursor={{ opacity: 0.08 }}
             />
             <Bar
