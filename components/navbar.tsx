@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Banknote, Landmark, LogOut, Users, Wallet } from "lucide-react";
+import { Banknote, Landmark, LogOut, ScrollText, Users, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const links = [
   { href: "/dashboard", label: "Dashboard", icon: Landmark },
   { href: "/devedores", label: "Devedores", icon: Users },
+  { href: "/emprestimos", label: "Empréstimos", icon: ScrollText },
   { href: "/emprestimos/novo", label: "Novo empréstimo", icon: Wallet },
   { href: "/pagamentos", label: "Pagamentos", icon: Banknote },
 ];
@@ -32,7 +33,7 @@ export default function Navbar() {
           </div>
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.22em] text-green-700">
-              Família Palmerense
+              Família Palmeirense
             </p>
             <h1 className="text-lg font-bold text-slate-900">Banco da Família</h1>
           </div>

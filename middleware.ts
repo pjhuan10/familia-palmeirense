@@ -32,7 +32,8 @@ export async function middleware(request: NextRequest) {
   const isProtectedRoute =
     request.nextUrl.pathname.startsWith("/dashboard") ||
     request.nextUrl.pathname.startsWith("/devedores") ||
-    request.nextUrl.pathname.startsWith("/emprestimos");
+    request.nextUrl.pathname.startsWith("/emprestimos") ||
+    request.nextUrl.pathname.startsWith("/pagamentos");
 
   if (!user && isProtectedRoute) {
     return NextResponse.redirect(new URL("/login", request.url));
@@ -46,5 +47,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/devedores/:path*", "/emprestimos/:path*", "/login"],
+  matcher: ["/dashboard/:path*", "/devedores/:path*", "/emprestimos/:path*", "/pagamentos/:path*", "/login"],
 };

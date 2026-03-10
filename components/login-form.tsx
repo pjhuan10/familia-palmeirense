@@ -90,7 +90,7 @@ export default function LoginForm() {
     <div className="w-full max-w-md rounded-3xl border border-green-100 bg-white p-8 shadow-[0_10px_40px_rgba(22,163,74,0.10)]">
       <div className="mb-6">
         <p className="text-sm font-semibold uppercase tracking-[0.22em] text-green-700">
-          Família Palmerense
+          Família Palmeirense
         </p>
         <h2 className="mt-2 text-3xl font-bold text-slate-900">
           {mode === "login" ? "Entrar no sistema" : "Criar conta"}

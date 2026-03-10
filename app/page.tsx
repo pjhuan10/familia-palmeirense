@@ -6,7 +6,7 @@ export default function Home() {
       <div className="mx-auto flex min-h-screen max-w-7xl flex-col justify-center px-6 py-16">
         <div className="max-w-3xl">
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-green-700">
-            Família Palmerense
+            Família Palmeirense
           </p>
           <h1 className="mt-4 text-5xl font-black leading-tight text-slate-900 md:text-7xl">
             O banco mais organizado da família.

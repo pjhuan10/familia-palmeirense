@@ -115,7 +115,7 @@ export default async function DashboardPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-green-700">
             Painel geral
           </p>
-          <h2 className="mt-2 text-4xl font-black text-slate-900">Dashboard Palmerense</h2>
+          <h2 className="mt-2 text-4xl font-black text-slate-900">Dashboard Palmeirense</h2>
           <p className="mt-2 text-slate-600">
             Uma visão rápida do que foi emprestado, do que falta receber e de quem está em dia.
           </p>
@@ -123,17 +123,17 @@ export default async function DashboardPage() {
           {vencemEstaSemana > 0 ? (
             <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
               <p className="font-semibold">
-                ⚠️ {vencemEstaSemana} empréstimo(s) vencem esta semana
+                {vencemEstaSemana} empréstimo(s) vencem esta semana
               </p>
             </div>
           ) : (
             <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-green-800">
-              <p className="font-semibold">✅ Nenhum empréstimo vence nesta semana</p>
+              <p className="font-semibold">Nenhum empréstimo vence nesta semana</p>
             </div>
           )}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4)">
           <SummaryCard
             title="Total emprestado"
             value={formatCurrency(totalEmprestado)}
@@ -213,7 +213,7 @@ export default async function DashboardPage() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-green-700">Ranking</p>
-                  <h3 className="text-2xl font-bold text-slate-900">🏆 Pagadores em dia</h3>
+                  <h3 className="text-2xl font-bold text-slate-900">Pagadores em dia</h3>
                 </div>
               </div>
 
@@ -246,7 +246,7 @@ export default async function DashboardPage() {
             <div className="rounded-3xl border border-red-100 bg-white p-6 shadow-sm">
               <div className="mb-5">
                 <p className="text-sm font-semibold text-red-600">Ranking</p>
-                <h3 className="text-2xl font-bold text-slate-900">💀 Caloteiros da família</h3>
+                <h3 className="text-2xl font-bold text-slate-900">Caloteiros da família</h3>
               </div>
 
               <div className="space-y-3">
@@ -270,7 +270,7 @@ export default async function DashboardPage() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-slate-500">Ninguém atrasado. Milagre palmerense.</p>
+                  <p className="text-slate-500">Ninguém atrasado. Milagre palmeirense.</p>
                 )}
               </div>
             </div>
