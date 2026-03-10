@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Landmark, Users, Wallet, LogOut } from "lucide-react";
+import { Banknote, Landmark, LogOut, Users, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const links = [
   { href: "/dashboard", label: "Dashboard", icon: Landmark },
   { href: "/devedores", label: "Devedores", icon: Users },
   { href: "/emprestimos/novo", label: "Novo empréstimo", icon: Wallet },
+  { href: "/pagamentos", label: "Pagamentos", icon: Banknote },
 ];
 
 export default function Navbar() {

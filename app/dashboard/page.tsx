@@ -1,8 +1,36 @@
+import {
+  BanknoteArrowUp,
+  CircleDollarSign,
+  Clock3,
+  TriangleAlert,
+  Trophy,
+} from "lucide-react";
 import Navbar from "@/components/navbar";
 import SummaryCard from "@/components/summary-card";
+import DeleteLoanButton from "@/components/delete-loan-button";
+import RegisterPaymentButton from "@/components/register-payment-button";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { BanknoteArrowUp, CircleDollarSign, Clock3, TriangleAlert } from "lucide-react";
+
+type LoanSummary = {
+  id: string;
+  devedor_id: string;
+  devedor_nome: string;
+  emprestador_nome: string | null;
+  titulo: string;
+  valor_total: number | string;
+  valor_pago: number | string;
+  valor_restante: number | string;
+  data_vencimento: string | null;
+  status_calculado: string;
+};
+
+type DebtorScore = {
+  nome: string;
+  totalAberto: number;
+  pagos: number;
+  atrasados: number;
+};
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -13,16 +41,70 @@ export default async function DashboardPage() {
     supabase
       .from("vw_emprestimos_resumo")
       .select("*")
+      .gt("valor_restante", 0)
       .order("data_vencimento", { ascending: true })
       .limit(5),
   ]);
 
-  const totalEmprestado =
-    resumo?.reduce((acc, item) => acc + Number(item.valor_total ?? 0), 0) ?? 0;
-  const totalRestante =
-    resumo?.reduce((acc, item) => acc + Number(item.valor_restante ?? 0), 0) ?? 0;
-  const atrasados =
-    resumo?.filter((item) => item.status_calculado === "atrasado").length ?? 0;
+  const rows = (resumo ?? []) as LoanSummary[];
+
+  const totalEmprestado = rows.reduce((acc, item) => acc + Number(item.valor_total ?? 0), 0);
+  const totalRestante = rows.reduce((acc, item) => acc + Number(item.valor_restante ?? 0), 0);
+  const atrasados = rows.filter((item) => item.status_calculado === "atrasado").length;
+
+  const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const weekLimit = new Date(todayStart);
+  weekLimit.setDate(weekLimit.getDate() + 7);
+
+  const vencemEstaSemana = rows.filter((item) => {
+    if (!item.data_vencimento) return false;
+    if (Number(item.valor_restante ?? 0) <= 0) return false;
+
+    const dueDate = new Date(`${item.data_vencimento}T00:00:00`);
+    return dueDate >= todayStart && dueDate <= weekLimit;
+  }).length;
+
+  const scoreMap = new Map<string, DebtorScore>();
+
+  for (const item of rows) {
+    const current = scoreMap.get(item.devedor_nome) ?? {
+      nome: item.devedor_nome,
+      totalAberto: 0,
+      pagos: 0,
+      atrasados: 0,
+    };
+
+    current.totalAberto += Number(item.valor_restante ?? 0);
+
+    if (item.status_calculado === "pago") {
+      current.pagos += 1;
+    }
+
+    if (item.status_calculado === "atrasado") {
+      current.atrasados += 1;
+    }
+
+    scoreMap.set(item.devedor_nome, current);
+  }
+
+  const ranking = Array.from(scoreMap.values());
+
+  const bonsPagadores = ranking
+    .filter((item) => item.pagos > 0)
+    .sort((a, b) => {
+      if (b.pagos !== a.pagos) return b.pagos - a.pagos;
+      return a.totalAberto - b.totalAberto;
+    })
+    .slice(0, 5);
+
+  const caloteiros = ranking
+    .filter((item) => item.totalAberto > 0 || item.atrasados > 0)
+    .sort((a, b) => {
+      if (b.atrasados !== a.atrasados) return b.atrasados - a.atrasados;
+      return b.totalAberto - a.totalAberto;
+    })
+    .slice(0, 5);
 
   return (
     <main className="min-h-screen">
@@ -35,8 +117,20 @@ export default async function DashboardPage() {
           </p>
           <h2 className="mt-2 text-4xl font-black text-slate-900">Dashboard Palmerense</h2>
           <p className="mt-2 text-slate-600">
-            Uma visão rápida do que foi emprestado, do que falta receber e dos próximos vencimentos.
+            Uma visão rápida do que foi emprestado, do que falta receber e de quem está em dia.
           </p>
+
+          {vencemEstaSemana > 0 ? (
+            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+              <p className="font-semibold">
+                ⚠️ {vencemEstaSemana} empréstimo(s) vencem esta semana
+              </p>
+            </div>
+          ) : (
+            <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-green-800">
+              <p className="font-semibold">✅ Nenhum empréstimo vence nesta semana</p>
+            </div>
+          )}
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -78,19 +172,30 @@ export default async function DashboardPage() {
                 vencimentos.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between rounded-2xl border border-slate-100 px-4 py-4"
+                    className="rounded-2xl border border-slate-100 px-4 py-4"
                   >
-                    <div>
-                      <p className="font-semibold text-slate-900">{item.devedor_nome}</p>
-                      <p className="text-sm text-slate-500">{item.titulo}</p>
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="font-semibold text-slate-900">{item.devedor_nome}</p>
+                        <p className="text-sm text-slate-500">
+                          Emprestado por: {item.emprestador_nome || "Não informado"}
+                        </p>
+                        <p className="text-sm text-slate-500">{item.titulo}</p>
+                      </div>
+
+                      <div className="text-right">
+                        <p className="font-bold text-green-700">
+                          {formatCurrency(Number(item.valor_restante ?? 0))}
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          {formatDate(item.data_vencimento)}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-green-700">
-                        {formatCurrency(Number(item.valor_restante ?? 0))}
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        {formatDate(item.data_vencimento)}
-                      </p>
+
+                    <div className="mt-4 flex flex-wrap justify-end gap-3">
+                      <RegisterPaymentButton loanId={item.id} />
+                      <DeleteLoanButton loanId={item.id} />
                     </div>
                   </div>
                 ))
@@ -100,31 +205,73 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
-            <div className="mb-5">
-              <p className="text-sm font-semibold text-green-700">Clima da família</p>
-              <h3 className="text-2xl font-bold text-slate-900">Resumo rápido</h3>
+          <div className="space-y-6">
+            <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-green-50 text-green-700">
+                  <Trophy size={22} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-green-700">Ranking</p>
+                  <h3 className="text-2xl font-bold text-slate-900">🏆 Pagadores em dia</h3>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {bonsPagadores.length ? (
+                  bonsPagadores.map((item, index) => (
+                    <div
+                      key={item.nome}
+                      className="flex items-center justify-between rounded-2xl bg-green-50 px-4 py-3"
+                    >
+                      <div>
+                        <p className="font-semibold text-slate-900">
+                          {index + 1}. {item.nome}
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          {item.pagos} pagamento(s) concluído(s)
+                        </p>
+                      </div>
+                      <p className="text-sm font-bold text-green-700">
+                        Aberto: {formatCurrency(item.totalAberto)}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-500">Ainda não há pagamentos concluídos.</p>
+                )}
+              </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="rounded-2xl bg-green-50 p-4">
-                <p className="text-sm text-green-800">Em aberto</p>
-                <p className="mt-1 text-2xl font-bold text-green-900">
-                  {formatCurrency(totalRestante)}
-                </p>
+            <div className="rounded-3xl border border-red-100 bg-white p-6 shadow-sm">
+              <div className="mb-5">
+                <p className="text-sm font-semibold text-red-600">Ranking</p>
+                <h3 className="text-2xl font-bold text-slate-900">💀 Caloteiros da família</h3>
               </div>
 
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-sm text-slate-600">Quantidade de registros</p>
-                <p className="mt-1 text-2xl font-bold text-slate-900">
-                  {String(resumo?.length ?? 0)}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-dashed border-green-200 p-4">
-                <p className="text-sm text-slate-600">
-                  Dica: depois a gente pode adicionar ranking dos pagadores e mural dos atrasados.
-                </p>
+              <div className="space-y-3">
+                {caloteiros.length ? (
+                  caloteiros.map((item, index) => (
+                    <div
+                      key={item.nome}
+                      className="flex items-center justify-between rounded-2xl bg-red-50 px-4 py-3"
+                    >
+                      <div>
+                        <p className="font-semibold text-slate-900">
+                          {index + 1}. {item.nome}
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          {item.atrasados} registro(s) atrasado(s)
+                        </p>
+                      </div>
+                      <p className="text-sm font-bold text-red-600">
+                        Aberto: {formatCurrency(item.totalAberto)}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-500">Ninguém atrasado. Milagre palmerense.</p>
+                )}
               </div>
             </div>
           </div>
