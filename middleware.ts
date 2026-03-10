@@ -33,7 +33,8 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/dashboard") ||
     request.nextUrl.pathname.startsWith("/devedores") ||
     request.nextUrl.pathname.startsWith("/emprestimos") ||
-    request.nextUrl.pathname.startsWith("/pagamentos");
+    request.nextUrl.pathname.startsWith("/pagamentos") ||
+    request.nextUrl.pathname.startsWith("/agenda");
 
   if (!user && isProtectedRoute) {
     return NextResponse.redirect(new URL("/login", request.url));
@@ -47,5 +48,12 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/devedores/:path*", "/emprestimos/:path*", "/pagamentos/:path*", "/login"],
+  matcher: [
+    "/dashboard/:path*",
+    "/devedores/:path*",
+    "/emprestimos/:path*",
+    "/pagamentos/:path*",
+    "/agenda/:path*",
+    "/login",
+  ],
 };

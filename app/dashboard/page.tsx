@@ -1,5 +1,6 @@
 import {
   BanknoteArrowUp,
+  CalendarDays,
   CircleDollarSign,
   Clock3,
   TriangleAlert,
@@ -32,27 +33,79 @@ type DebtorScore = {
   atrasados: number;
 };
 
+type FamilyEvent = {
+  id: string;
+  title: string;
+  description: string | null;
+  event_date: string;
+  event_time: string | null;
+  location: string | null;
+  category: string;
+};
+
+function getCategoryLabel(category?: string | null) {
+  switch (category) {
+    case "aniversario":
+      return "Aniversário";
+    case "churrasco":
+      return "Churrasco";
+    case "almoco":
+      return "Almoço";
+    case "culto":
+      return "Culto";
+    case "viagem":
+      return "Viagem";
+    case "reuniao":
+      return "Reunião";
+    case "confraternizacao":
+      return "Confraternização";
+    default:
+      return "Evento";
+  }
+}
+
+function formatEventDate(date: string, time?: string | null) {
+  const formattedDate = new Intl.DateTimeFormat("pt-BR").format(
+    new Date(`${date}T00:00:00`),
+  );
+
+  if (!time) return formattedDate;
+
+  return `${formattedDate} às ${time.slice(0, 5)}`;
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient();
+  const today = new Date();
+  const todayIso = today.toISOString().slice(0, 10);
 
-  const [{ data: resumo }, { data: devedores }, { data: vencimentos }] = await Promise.all([
-    supabase.from("vw_emprestimos_resumo").select("*"),
-    supabase.from("devedores").select("id"),
-    supabase
-      .from("vw_emprestimos_resumo")
-      .select("*")
-      .gt("valor_restante", 0)
-      .order("data_vencimento", { ascending: true })
-      .limit(5),
-  ]);
+  const [{ data: resumo }, { data: devedores }, { data: vencimentos }, { data: proximoEvento }] =
+    await Promise.all([
+      supabase.from("vw_emprestimos_resumo").select("*"),
+      supabase.from("devedores").select("id"),
+      supabase
+        .from("vw_emprestimos_resumo")
+        .select("*")
+        .gt("valor_restante", 0)
+        .order("data_vencimento", { ascending: true })
+        .limit(5),
+      supabase
+        .from("family_events")
+        .select("*")
+        .gte("event_date", todayIso)
+        .order("event_date", { ascending: true })
+        .order("event_time", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
   const rows = (resumo ?? []) as LoanSummary[];
+  const nextEvent = (proximoEvento ?? null) as FamilyEvent | null;
 
   const totalEmprestado = rows.reduce((acc, item) => acc + Number(item.valor_total ?? 0), 0);
   const totalRestante = rows.reduce((acc, item) => acc + Number(item.valor_restante ?? 0), 0);
   const atrasados = rows.filter((item) => item.status_calculado === "atrasado").length;
 
-  const today = new Date();
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const weekLimit = new Date(todayStart);
   weekLimit.setDate(weekLimit.getDate() + 7);
@@ -133,7 +186,7 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4)">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <SummaryCard
             title="Total emprestado"
             value={formatCurrency(totalEmprestado)}
@@ -161,47 +214,94 @@ export default async function DashboardPage() {
         </div>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.3fr_0.9fr]">
-          <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
-            <div className="mb-5">
-              <p className="text-sm font-semibold text-green-700">Próximos vencimentos</p>
-              <h3 className="text-2xl font-bold text-slate-900">Agenda de cobrança</h3>
-            </div>
+          <div className="space-y-6">
+            <div className="glass-card lift-hover rounded-[30px] p-6 fade-up">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-[22px] bg-green-50/90 text-green-700 shadow-inner">
+                  <CalendarDays size={22} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-green-700">Família</p>
+                  <h3 className="text-2xl font-bold text-slate-900">Próximo evento</h3>
+                </div>
+              </div>
 
-            <div className="space-y-4">
-              {vencimentos?.length ? (
-                vencimentos.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-2xl border border-slate-100 px-4 py-4"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="font-semibold text-slate-900">{item.devedor_nome}</p>
-                        <p className="text-sm text-slate-500">
-                          Emprestado por: {item.emprestador_nome || "Não informado"}
-                        </p>
-                        <p className="text-sm text-slate-500">{item.titulo}</p>
-                      </div>
-
-                      <div className="text-right">
-                        <p className="font-bold text-green-700">
-                          {formatCurrency(Number(item.valor_restante ?? 0))}
-                        </p>
-                        <p className="text-sm text-slate-500">
-                          {formatDate(item.data_vencimento)}
-                        </p>
-                      </div>
+              {nextEvent ? (
+                <div className="rounded-2xl border border-slate-100 bg-white/40 p-4">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-green-700">
+                        {getCategoryLabel(nextEvent.category)}
+                      </p>
+                      <h4 className="mt-1 text-xl font-bold text-slate-900">
+                        {nextEvent.title}
+                      </h4>
                     </div>
 
-                    <div className="mt-4 flex flex-wrap justify-end gap-3">
-                      <RegisterPaymentButton loanId={item.id} />
-                      <DeleteLoanButton loanId={item.id} />
+                    <div className="rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
+                      {formatEventDate(nextEvent.event_date, nextEvent.event_time)}
                     </div>
                   </div>
-                ))
+
+                  {nextEvent.location ? (
+                    <p className="text-sm text-slate-600">
+                      <span className="font-semibold">Local:</span> {nextEvent.location}
+                    </p>
+                  ) : null}
+
+                  {nextEvent.description ? (
+                    <p className="mt-3 text-sm leading-6 text-slate-600">
+                      {nextEvent.description}
+                    </p>
+                  ) : null}
+                </div>
               ) : (
-                <p className="text-slate-500">Nenhum vencimento encontrado.</p>
+                <p className="text-slate-500">Nenhum evento futuro cadastrado.</p>
               )}
+            </div>
+
+            <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
+              <div className="mb-5">
+                <p className="text-sm font-semibold text-green-700">Próximos vencimentos</p>
+                <h3 className="text-2xl font-bold text-slate-900">Agenda de cobrança</h3>
+              </div>
+
+              <div className="space-y-4">
+                {vencimentos?.length ? (
+                  vencimentos.map((item) => (
+                    <div
+                      key={item.id}
+                      className="rounded-2xl border border-slate-100 px-4 py-4"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-semibold text-slate-900">{item.devedor_nome}</p>
+                          <p className="text-sm text-slate-500">
+                            Emprestado por: {item.emprestador_nome || "Não informado"}
+                          </p>
+                          <p className="text-sm text-slate-500">{item.titulo}</p>
+                        </div>
+
+                        <div className="text-right">
+                          <p className="font-bold text-green-700">
+                            {formatCurrency(Number(item.valor_restante ?? 0))}
+                          </p>
+                          <p className="text-sm text-slate-500">
+                            {formatDate(item.data_vencimento)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap justify-end gap-3">
+                        <RegisterPaymentButton loanId={item.id} />
+                        <DeleteLoanButton loanId={item.id} />
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-500">Nenhum vencimento encontrado.</p>
+                )}
+              </div>
             </div>
           </div>
 
