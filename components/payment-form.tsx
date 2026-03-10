@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { registerPayment } from "@/app/actions/payments";
+import { registerPaymentWithState } from "@/app/actions/payments";
 
 type EmprestimoOption = {
   id: string;
@@ -22,7 +22,7 @@ const initialState = {
 };
 
 export default function PaymentForm({ emprestimos }: Props) {
-  const [state, formAction, isPending] = useActionState(registerPayment, initialState);
+  const [state, formAction, isPending] = useActionState(registerPaymentWithState, initialState);
   const [selectedId, setSelectedId] = useState("");
 
   useEffect(() => {
