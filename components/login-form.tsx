@@ -51,7 +51,7 @@ export default function LoginForm() {
     });
 
     if (error) {
-      setMessage("E-mail ou senha inválidos. Se essa conta foi criada antes por link mágico, use 'Esqueci minha senha'.");
+      setMessage(error.message);
       setLoading(false);
       return;
     }
@@ -73,7 +73,7 @@ export default function LoginForm() {
     const supabase = createClient();
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `/reset-password`,
+      redirectTo: `${window.location.origin}/api/auth/callback?next=/reset-password`,
     });
 
     if (error) {
