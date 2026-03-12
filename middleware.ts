@@ -34,7 +34,8 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/devedores") ||
     request.nextUrl.pathname.startsWith("/emprestimos") ||
     request.nextUrl.pathname.startsWith("/pagamentos") ||
-    request.nextUrl.pathname.startsWith("/agenda");
+    request.nextUrl.pathname.startsWith("/agenda") ||
+    request.nextUrl.pathname.startsWith("/iptu");
 
   if (!user && isProtectedRoute) {
     return NextResponse.redirect(new URL("/login", request.url));
@@ -54,6 +55,7 @@ export const config = {
     "/emprestimos/:path*",
     "/pagamentos/:path*",
     "/agenda/:path*",
+    "/iptu/:path*",
     "/login",
   ],
 };

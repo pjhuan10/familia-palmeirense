@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Banknote,
   CalendarDays,
+  Home,
   Landmark,
   LogOut,
   Menu,
@@ -23,6 +24,7 @@ const links = [
   { href: "/emprestimos/novo", label: "Novo empréstimo", icon: Wallet },
   { href: "/pagamentos", label: "Pagamentos", icon: Banknote },
   { href: "/agenda", label: "Agenda", icon: CalendarDays },
+  { href: "/iptu", label: "IPTU", icon: Home },
 ];
 
 export default function Navbar() {
